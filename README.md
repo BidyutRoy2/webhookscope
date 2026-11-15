@@ -9,7 +9,7 @@
 
 **Your Telegram bot went silent. The process is running, the logs look healthy — and its updates are going somewhere else. WebhookScope finds out who claimed your bot token, in seconds.**
 
-> **Live demo:** deploy it on Vercel in one click (see [Deploy on Vercel](#deploy-on-vercel) below) — the live URL goes here once deployed. The demo runs entirely in the browser: no signup, no server, no token by default.
+> **Live demo:** [webhookscope.vercel.app](https://webhookscope.vercel.app/) — the demo runs entirely in the browser: no signup, no server, no token by default.
 >
 > 🎬 **Demo video:** [assets/demo.mp4](assets/demo.mp4) (18 s) — the 3-day silent bot, diagnosed in 10 seconds. GIF version: [assets/demo.gif](assets/demo.gif).
 
