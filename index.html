@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WebhookScope — Who claimed my bot token? | Silent Bot Autopsy</title>
+<meta name="description" content="WebhookScope is a free, static, browser-only Telegram Bot Update Flow Explorer. Paste getWebhookInfo JSON (no token) and find out in seconds who claimed your bot token — n8n, a stale deploy, or a second poller — with a framework-specific fix.">
+<meta property="og:title" content="WebhookScope — Who claimed my bot token?">
+<meta property="og:description" content="Silent Bot Autopsy for Telegram bots. Paste getWebhookInfo JSON, no token needed. Verdict + fingerprint + timeline + fix.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="assets/social-preview.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='42' fill='none' stroke='%2334f5a5' stroke-width='6'/><circle cx='50' cy='50' r='10' fill='%23ff4d5e'/></svg>">
+</head>
+<body>
+<header class="top"><div class="wrap"><nav>
+<span class="brand">Webhook<b>Scope</b></span>
+<span class="badge">v0.1.0</span>
+<a href="#autopsy">Autopsy</a><a href="#lesson">Flow lesson</a><a href="#playground">Failure lab</a><a href="#inspector">Update inspector</a><a href="#safety">Token safety</a>
+<a href="https://github.com/BidyutRoy2/webhookscope" rel="noopener">GitHub ↗</a>
+</nav></div></header>
+
+<main class="wrap">
+<section class="hero">
+<div class="radar" aria-hidden="true"><span class="dot"></span></div>
+<p class="pill hot">● SILENT BOT AUTOPSY</p>
+<h1>Who claimed<br>my bot <span class="stolen">token?</span></h1>
+<p class="lede">Your Telegram bot went silent. The process is running, the logs look healthy — and its updates are going somewhere else. Paste your <code>getWebhookInfo</code> JSON below. No token, no signup, no server. In seconds you get a verdict, a fingerprint of whoever claimed the token, a timeline, and the exact fix for your stack.</p>
+<p class="row"><a href="#autopsy"><button>Run the autopsy ↓</button></a> <button class="ghost" id="demoBtnTop">Try the demo bot</button></p>
+<p><img class="heroimg" src="assets/hero.png" alt="WebhookScope demo: verdict WEBHOOK — STOLEN, claimed by an n8n workflow, pending 47 updates, last error 502 Bad Gateway"></p>
+<p class="mono" style="color:var(--mut);font-size:13px">DEMO above the fold — the 3-day silent bot, diagnosed in 10 seconds. Real demo, labelled DEMO, no real token. <a href="assets/demo.mp4">Watch the 18-second demo video ↓</a></p>
+</section>
+
+<section id="autopsy">
+<div class="card">
+<h2>🔍 Silent Bot Autopsy</h2>
+<p>Paste the raw JSON from <code>https://api.telegram.org/bot&lt;TOKEN&gt;/getWebhookInfo</code> — open that URL in a browser tab, copy the JSON, paste it here. The JSON contains <b>no secret</b>. Your token never touches this page in the default flow.</p>
+<label for="jsonInput">getWebhookInfo JSON <span class="pill">DEMO pre-filled — click “Autopsy my bot”</span></label>
+<textarea id="jsonInput" spellcheck="false" aria-label="getWebhookInfo JSON"></textarea>
+<div class="row">
+<label for="fwSelect" style="margin:0">Your stack</label>
+<select id="fwSelect" style="width:auto;min-width:220px">
+<option value="aiogram">aiogram (Python)</option>
+<option value="python-telegram-bot">python-telegram-bot</option>
+<option value="telegraf">Telegraf (Node.js)</option>
+<option value="grammy">grammY (Node.js / Deno)</option>
+<option value="n8n">n8n</option>
+<option value="openclaw">OpenClaw</option>
+</select>
+<label for="err409" style="margin:0">409 error line (optional)</label>
+<input type="text" id="err409" style="flex:1;min-width:220px" placeholder="e.g. Conflict: terminated by other getUpdates request">
+</div>
+<div class="row" style="margin-top:12px">
+<button id="runBtn">Autopsy my bot</button>
+<button class="ghost" id="demoBtn">Load demo (n8n stole it)</button>
+<button class="ghost" id="sampleBtn">Sample again</button>
+<button class="ghost" id="exportBtn">Export redacted report</button>
+<button class="ghost" id="clearBtn">Clear</button>
+</div>
+<p id="parseError" class="danger" hidden></p>
+<div id="verdictBox" class="verdict" style="margin-top:14px" aria-live="polite">
+<strong>Verdict radar — waiting.</strong><br><span style="color:var(--mut)">Paste JSON and click “Autopsy my bot”, or load the demo. The demo runs automatically on first load.</span>
+</div>
+<div id="fingerprintBox"></div>
+<div id="notesBox"></div>
+<div id="timelineBox"></div>
+<div id="fixBox"></div>
+<details>
+<summary>Or check live with a token (optional, browser-only, collapsed by default)</summary>
+<p>Only if you want it: paste a token, this page calls <code>api.telegram.org</code> <b>directly from your browser</b>. No server, nothing stored, nothing sent anywhere else. The field is cleared from the page as soon as the check finishes.</p>
+<label for="tokenInput">Bot token (cleared after the check)</label>
+<input type="password" id="tokenInput" autocomplete="off" placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11">
+<div class="row" style="margin-top:10px"><button id="liveBtn" class="warn">Check live (browser only)</button></div>
+<p id="liveMsg" style="color:var(--mut)"></p>
+<p class="warning"><b>After a live check, consider revoking the token in BotFather (<code>/revoke</code>)</b> and using a fresh one — especially on a shared machine. JSON-paste is the safer default, and it gives the full verdict.</p>
+</details>
+</div>
+</section>
+
+<section id="lesson">
+<div class="card">
+<h2>▶️ How an update travels — polling vs webhook</h2>
+<p>Telegram delivers a bot's updates to <b>one consumer only</b>: either long polling (<code>getUpdates</code>) or one webhook URL. Never both, never two pollers. Press Play and watch one update travel — then break it in the Failure Lab below.</p>
+<div class="row">
+<button id="playBtn">▶ Play</button><button class="ghost" id="stepBtn">Step →</button><button class="ghost" id="resetBtn">Reset</button>
+<label style="margin:0"><input type="radio" name="mode" value="polling" checked> Long polling</label>
+<label style="margin:0"><input type="radio" name="mode" value="webhook"> Webhook</label>
+</div>
+<div class="diagram" id="diagram" style="margin-top:14px">
+<span class="node" data-node="user">👤 User</span><span class="arrow">→</span>
+<span class="node" data-node="telegram">✈ Telegram</span><span class="arrow">→</span>
+<span class="node" data-node="bot">🤖 Your bot</span><span class="arrow">→</span>
+<span class="node" data-node="reply">💬 sendMessage</span>
+</div>
+<p id="stepText" style="color:var(--mut)">Step 0/5 — press Play or Step.</p>
+<table aria-label="Packet flow"><thead><tr><th>#</th><th>Time</th><th>Source</th><th>Destination</th><th>Info</th></tr></thead><tbody id="flowBody"><tr><td colspan="5" style="color:var(--mut)">No updates on the wire yet.</td></tr></tbody></table>
+</div>
+</section>
+
+<section id="playground">
+<div class="card">
+<h2>🧪 Failure-injection playground</h2>
+<p>Flip a switch and watch the queue grow. These are simulations — nothing here touches a real bot.</p>
+<label class="toggle"><input type="checkbox" id="tgSecond"><span><b>Second poller starts</b> — another copy of the bot polls the same token. Expect a 409, then silence.</span></label>
+<label class="toggle"><input type="checkbox" id="tgWebhook"><span><b>Webhook set elsewhere</b> — an n8n workflow registers a webhook. Polling is terminated immediately.</span></label>
+<label class="toggle"><input type="checkbox" id="tg500"><span><b>Handler returns 500</b> — Telegram retries the delivery, then records a last error.</span></label>
+<label class="toggle"><input type="checkbox" id="tgSlow"><span><b>Handler is slow (&gt;60s)</b> — deliveries time out and pending_update_count climbs.</span></label>
+<p id="playResult" class="mono" style="color:var(--mut)">Simulated pending_update_count: 0 · verdict: POLLING — healthy</p>
+</div>
+</section>
+
+<section id="inspector">
+<div class="card">
+<h2>🧬 Paste-your-Update inspector</h2>
+<p>Paste any Telegram <code>Update</code> JSON and see it decoded field by field — which update type it is, which handler it matches, and the <code>sendMessage</code> call it should produce.</p>
+<label for="updInput">Update JSON</label>
+<textarea id="updInput" spellcheck="false">{"update_id": 10000, "message": {"message_id": 1, "from": {"id": 123, "first_name": "Ada"}, "chat": {"id": 123, "type": "private"}, "date": 1762995600, "text": "/start"}}</textarea>
+<div class="row" style="margin-top:10px"><button id="inspectBtn">Inspect update</button></div>
+<div id="inspectOut"></div>
+</div>
+</section>
+
+<section id="coming">
+<div class="card">
+<h2>Coming next (v2 — not in v0.1.0)</h2>
+<p>Update Coverage X-Ray · Live Handler Trace · Time-Travel Replay. They are separate features, listed here only so you know the roadmap. v0.1.0 is the Autopsy + Flow Explorer, and it is complete on its own.</p>
+</div>
+</section>
+
+<section id="safety">
+<div class="card">
+<h2>🔒 Token safety — read this first</h2>
+<ul>
+<li><b>JSON-paste is the default.</b> <code>getWebhookInfo</code> output contains no secret. That is the whole diagnosis.</li>
+<li><b>Live mode is optional and browser-only.</b> The token is fetched to <code>api.telegram.org</code> from your browser, never sent to WebhookScope (there is no server), never stored, and cleared from the page after the check.</li>
+<li><b>This page never calls <code>deleteWebhook</code> or <code>setWebhook</code>.</b> You copy the command and run it yourself. That is deliberate.</li>
+<li><b>Fingerprinting is probabilistic.</b> Telegram publishes no “who set this webhook” API. Every verdict carries a confidence and its evidence — unknown hosts stay <b>Unknown</b>, never a guess.</li>
+<li><b>Past claim times cannot be reconstructed exactly.</b> Telegram exposes only <code>last_error_date</code> and the current pending count. The timeline is built by sampling forward, honestly labelled as a window, never an invented timestamp.</li>
+</ul>
+</div>
+</section>
+</main>
+<footer><div class="wrap">
+WebhookScope v0.1.0 · MIT · Static site — no backend, no accounts, no tracking. Source: <a href="https://github.com/BidyutRoy2/webhookscope">github.com/BidyutRoy2/webhookscope</a> · Live demo: deploy via Vercel (see README) · Inspired by the Protocol Explorer lesson grammar, with a different subject and an original dark forensic design.
+</div></footer>
+<script type="module" src="assets/js/app.js"></script>
+</body>
+</html>
