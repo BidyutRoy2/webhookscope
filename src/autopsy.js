@@ -210,7 +210,7 @@ export function exportReport(diagnosis, samples) {
     lines.push('', '## Timeline (local samples only)', `- ${samples.length} sample(s), ${samples[0].sampledAt} → ${samples[samples.length - 1].sampledAt}`);
     for (const s of samples) lines.push(`- ${s.sampledAt}: url=${s.url || '(polling)'}, pending=${s.pending_update_count || 0}`);
   }
-  lines.push('', '_Generated locally by WebhookScope v0.1.0. No token was used or stored. Hostnames only — no secrets._');
+  lines.push('', '_Generated locally by WebhookScope v0.1.2. No token was used or stored. Hostnames only — no secrets._');
   return lines.join('\n');
 }
 

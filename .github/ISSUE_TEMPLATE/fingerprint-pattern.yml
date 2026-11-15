@@ -1,0 +1,36 @@
+name: Fingerprint pattern
+description: Add (or fix) a claimant fingerprint in data/claimants.json
+title: "[fingerprint] "
+labels: ["fingerprint"]
+body:
+  - type: textarea
+    id: shape
+    attributes:
+      label: Host / path shape
+      description: Example URL shape (use example.com / fake IPs, never a real webhook URL).
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: How do you know this host belongs to this service? (docs link, your own deploy, etc.)
+    validations:
+      required: true
+  - type: dropdown
+    id: confidence
+    attributes:
+      label: Suggested confidence
+      options:
+        - high (host match + path match)
+        - medium (host match only)
+        - low (hint only — stays a hint)
+    validations:
+      required: true
+  - type: textarea
+    id: verify
+    attributes:
+      label: How to verify
+      description: What should a user check to confirm this claimant is theirs?
+    validations:
+      required: false

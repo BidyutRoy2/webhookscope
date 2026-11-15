@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/BidyutRoy2/webhookscope/actions/workflows/ci.yml/badge.svg)](https://github.com/BidyutRoy2/webhookscope/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v0.1.1-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.1.2-blue.svg)](CHANGELOG.md)
 [![Static site](https://img.shields.io/badge/site-static%20%7C%20no%20backend-brightgreen.svg)](docs/vercel-deploy.md)
 
 ![WebhookScope demo — verdict WEBHOOK STOLEN, claimed by an n8n workflow, 47 updates pending](assets/hero.png)
@@ -38,7 +38,7 @@ Paste your `getWebhookInfo` JSON (no token — that output contains no secret) a
 - **Animated flow lesson** — long polling vs webhook, Play / Step / Reset, with a flow table (User → Telegram → Your bot → sendMessage).
 - **Failure-injection playground** — flip a switch (second poller, webhook set elsewhere, handler 500, slow handler) and watch the simulated queue grow.
 - **Paste-your-Update inspector** — decode any Update JSON field by field: type, matching handler, and the `sendMessage` it should produce.
-- **Coming next (v2, not in v0.1.0):** Update Coverage X-Ray · Live Handler Trace · Time-Travel Replay.
+- **Coming next (v2, not in v0.1.2):** Update Coverage X-Ray · Live Handler Trace · Time-Travel Replay.
 
 ## Quick start
 
@@ -119,9 +119,9 @@ Dated 48-hour schedule: **Mon 16 – Tue 17 Nov 2026, 12:00–17:00 UTC** — se
 
 > **Uploading without launching leaves the repo invisible.** GitHub gives new repos essentially no organic distribution — the first stars come from outside GitHub in a compressed 24–48 h burst. Do not skip the launch plan.
 
-## Release — v0.1.1
+## Release — v0.1.2
 
-v0.1.0 is published at [releases/tag/v0.1.0](https://github.com/BidyutRoy2/webhookscope/releases/tag/v0.1.0) and v0.1.1 (design & UI fix) at [releases/tag/v0.1.1](https://github.com/BidyutRoy2/webhookscope/releases/tag/v0.1.1), both from the notes in [CHANGELOG.md](CHANGELOG.md). No registry install line — this is not published on npm/PyPI.
+v0.1.0 is published at [releases/tag/v0.1.0](https://github.com/BidyutRoy2/webhookscope/releases/tag/v0.1.0), v0.1.1 (design & UI fix) at [releases/tag/v0.1.1](https://github.com/BidyutRoy2/webhookscope/releases/tag/v0.1.1) and v0.1.2 (Pro Polish) at [releases/tag/v0.1.2](https://github.com/BidyutRoy2/webhookscope/releases/tag/v0.1.2), all from the notes in [CHANGELOG.md](CHANGELOG.md). No registry install line — this is not published on npm/PyPI.
 
 ## Contributing
 

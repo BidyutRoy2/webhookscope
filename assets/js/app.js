@@ -1,6 +1,8 @@
 import { parseWebhookInfo, diagnose, fingerprintUrl, buildTimeline, sparklinePath, exportReport } from '../../src/autopsy.js';
 import { FIXES } from '../../src/fixes.js';
 import { inspectUpdate } from '../../src/update-inspector.js';
+import { decodeShare, shareUrl, shareTooLarge } from '../../src/share.js';
+import { locateJsonError } from '../../src/json-error.js';
 
 const FALLBACK_CLAIMANTS = { patterns: [
   { id: 'n8n', label: 'n8n workflow (Telegram Trigger)', kind: 'automation', confidence: 'high', hostPatterns: ['\\.n8n\\.cloud$', 'n8n'], pathPatterns: ['/webhook/', '/webhook-test/'], verify: 'Check n8n → Workflows → Telegram Trigger credential.', fix: 'Give n8n its own bot via BotFather → /newbot.' },
@@ -23,10 +25,51 @@ const DEMO_JSON = JSON.stringify({ ok: true, result: {
 } }, null, 2);
 const DEMO_GETME = JSON.stringify({ ok: true, result: { id: 987654321, is_bot: true, first_name: 'Demo Bot', username: 'demo_bot', can_read_all_group_messages: false } }, null, 2);
 
+// Sample presets — verbatim copies of examples/*.json, embedded inline so
+// they work on file:// too (no fetch). The 409 preset also sets the err409 field.
+const PRESET_HEALTHY = "{\n  \"ok\": true,\n  \"result\": {\n    \"url\": \"https://bot.example.com/webhook/telegram\",\n    \"has_custom_certificate\": false,\n    \"pending_update_count\": 0,\n    \"ip_address\": \"203.0.113.10\",\n    \"max_connections\": 40\n  }\n}";
+const PRESET_POLLER = "{\n  \"ok\": true,\n  \"result\": {\n    \"url\": \"\",\n    \"has_custom_certificate\": false,\n    \"pending_update_count\": 0,\n    \"max_connections\": 40\n  }\n}";
+const PRESET_STALE = "{\n  \"ok\": true,\n  \"result\": {\n    \"url\": \"https://bot.example.com/webhook/telegram\",\n    \"has_custom_certificate\": false,\n    \"pending_update_count\": 12,\n    \"ip_address\": \"203.0.113.10\",\n    \"last_error_date\": 1762995600,\n    \"last_error_message\": \"Wrong response from the webhook: 502 Bad Gateway\",\n    \"max_connections\": 40\n  }\n}";
+const PRESETS = {
+  healthy: { json: PRESET_HEALTHY, err409: '' },
+  poller: { json: PRESET_POLLER, err409: 'Conflict: terminated by other getUpdates request' },
+  stale: { json: PRESET_STALE, err409: '' },
+};
+
 let lastDiagnosis = null;
 let lastSamples = [];
 
 function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+// --- Clipboard with fallback (file:// and older browsers) ---
+async function copyText(text, btn) {
+  const original = btn.textContent;
+  const done = (label) => {
+    btn.textContent = label;
+    setTimeout(() => { btn.textContent = original; }, 2000);
+  };
+  try {
+    await navigator.clipboard.writeText(text);
+    done('Copied ✓');
+    return true;
+  } catch {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      done('Copied ✓');
+      return true;
+    } catch {
+      done('Copy failed — select manually');
+      return false;
+    }
+  }
+}
 
 function storeKey() { return 'webhookscope:autopsy:timeline'; }
 function loadSamples() { try { return JSON.parse(localStorage.getItem(storeKey()) || '[]'); } catch { return []; } }
@@ -38,6 +81,34 @@ function saveSample(info) {
   const kept = samples.slice(-50);
   try { localStorage.setItem(storeKey(), JSON.stringify(kept)); } catch {}
   return kept;
+}
+
+// --- Recent history (localStorage only, max 5; getWebhookInfo has no secret) ---
+const HISTORY_KEY = 'webhookscope:autopsy:history';
+function loadHistory() { try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; } }
+function saveHistory(list) { try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list.slice(0, 5))); } catch {} }
+function addHistory(d, raw) {
+  let host = '(polling)';
+  try { if (d.url) host = new URL(d.url).hostname; } catch { host = d.url || '(polling)'; }
+  const list = loadHistory().filter((h) => h.json !== raw);
+  list.unshift({ json: raw, label: d.label, host, time: new Date().toISOString() });
+  saveHistory(list);
+  renderHistory();
+}
+function renderHistory() {
+  const box = $('historyBox');
+  const list = loadHistory();
+  if (!list.length) { box.innerHTML = ''; return; }
+  box.innerHTML = `<div class="card"><h3>Recent — local only</h3><div class="history">${list.map((h, i) => `<span class="hwrap"><button class="ghost mini" data-h="${i}">${esc(h.label)} · ${esc(h.host)} · ${esc(new Date(h.time).toLocaleString())}</button><button class="ghost mini hx" data-hx="${i}" aria-label="Delete this entry">✕</button></span>`).join('')}<button class="ghost mini" id="histClearAll">Clear all</button></div></div>`;
+  box.querySelectorAll('[data-h]').forEach((b) => b.addEventListener('click', () => {
+    const h = loadHistory()[Number(b.dataset.h)];
+    if (!h) return;
+    $('jsonInput').value = h.json; fitJson(); updateShareState(); runAutopsy();
+  }));
+  box.querySelectorAll('[data-hx]').forEach((b) => b.addEventListener('click', () => {
+    const list2 = loadHistory(); list2.splice(Number(b.dataset.hx), 1); saveHistory(list2); renderHistory();
+  }));
+  $('histClearAll').addEventListener('click', () => { saveHistory([]); renderHistory(); });
 }
 
 function renderTimeline() {
@@ -70,14 +141,16 @@ function renderFix(framework, diagnosis) {
 
 function radarSVG(cls) {
   const color = cls === 'stolen' ? '#ff4d5e' : cls === 'healthy' ? '#34f5a5' : cls === 'failing' ? '#ffb020' : '#9fb8ad';
-  return `<svg class="radarviz" width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="Verdict radar"><circle cx="60" cy="60" r="54" fill="none" stroke="#1d2f33"/><circle cx="60" cy="60" r="36" fill="none" stroke="#1d2f33"/><circle cx="60" cy="60" r="18" fill="none" stroke="#1d2f33"/><line x1="60" y1="60" x2="102" y2="30" stroke="${color}" stroke-width="2"/><circle cx="88" cy="42" r="6" fill="${color}"/><circle cx="60" cy="60" r="3" fill="${color}"/></svg>`;
+  return `<svg class="radarviz" width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="Verdict radar"><circle cx="60" cy="60" r="54" fill="none" stroke="#43707a"/><circle cx="60" cy="60" r="36" fill="none" stroke="#43707a"/><circle cx="60" cy="60" r="18" fill="none" stroke="#43707a"/><line x1="60" y1="60" x2="102" y2="30" stroke="${color}" stroke-width="2"/><circle cx="88" cy="42" r="6" fill="${color}"/><circle cx="60" cy="60" r="3" fill="${color}"/></svg>`;
 }
 
 function renderDiagnosis(d) {
   lastDiagnosis = d;
   const cls = d.verdict.includes('STOLEN') ? 'stolen' : d.verdict.includes('HEALTHY') ? 'healthy' : d.verdict === 'INVALID' ? '' : 'failing';
+  const verdictText = `${d.label} (${d.confidence} confidence) — ${d.summary}`;
   $('verdictBox').className = `verdict ${cls}`;
-  $('verdictBox').innerHTML = `${radarSVG(cls)}<strong>${esc(d.label)}</strong><span class="conf">${esc(d.confidence)} confidence</span><p>${esc(d.summary)}</p>`;
+  $('verdictBox').innerHTML = `${radarSVG(cls)}<strong>${esc(d.label)}</strong><span class="conf">${esc(d.confidence)} confidence</span><p>${esc(d.summary)}</p><button class="ghost mini" id="copyVerdictBtn">Copy verdict</button>`;
+  $('copyVerdictBtn').addEventListener('click', async (e) => { await copyText(verdictText, e.currentTarget); });
   $('heroVerdict').textContent = `Latest result — ${d.label} · ${d.confidence} confidence${d.fingerprint ? ` · ${d.fingerprint.label}` : ''}`;
   $('fingerprintBox').innerHTML = d.fingerprint && d.url ? `<div class="card"><h3>Claimant fingerprint</h3>
     <p><b>${esc(d.fingerprint.label)}</b> <span class="pill ${d.fingerprint.confidence === 'high' ? 'hot' : ''}">${esc(d.fingerprint.confidence)} confidence</span></p>
@@ -90,22 +163,74 @@ function renderDiagnosis(d) {
   renderFix($('fwSelect').value, d);
 }
 
-function runAutopsy(prefillDemo = false) {
-  const raw = $('jsonInput').value.trim();
+function showParseError(text, loc) {
   const errEl = $('parseError');
-  errEl.hidden = true;
+  const jumpBtn = $('jumpErrBtn');
+  errEl.textContent = text;
+  errEl.hidden = false;
+  $('jsonInput').setAttribute('aria-invalid', 'true');
+  if (loc) {
+    jumpBtn.hidden = false;
+    jumpBtn.onclick = () => {
+      const t = $('jsonInput');
+      t.focus();
+      try { t.setSelectionRange(loc.position, loc.position + 1); } catch {}
+    };
+  } else {
+    jumpBtn.hidden = true;
+  }
+}
+
+function clearParseError() {
+  $('parseError').hidden = true;
+  $('jumpErrBtn').hidden = true;
+  $('jsonInput').removeAttribute('aria-invalid');
+}
+
+function runAutopsy({ focus = true } = {}) {
+  const raw = $('jsonInput').value;
+  clearParseError();
+  const trimmed = raw.trim();
+  if (!trimmed) { showParseError('Empty input — paste the getWebhookInfo JSON first.'); return; }
+  const loc = locateJsonError(raw);
+  if (loc) {
+    // Syntax error — pinpoint it, never clear the pasted JSON.
+    showParseError(`Line ${loc.line}, column ${loc.column}: ${loc.message}`, loc);
+    return;
+  }
   const { info, getMe, error } = parseWebhookInfo(raw);
-  if (error || !info) { errEl.textContent = error || 'Could not parse that JSON.'; errEl.hidden = false; return; }
+  if (error || !info) {
+    if (error && error.includes('does not look like getWebhookInfo')) {
+      showParseError("Valid JSON — but this doesn't look like getWebhookInfo output: missing url/pending_update_count. Did you paste the right endpoint?");
+    } else {
+      showParseError(error || 'Could not parse that JSON.');
+    }
+    return;
+  }
   const d = diagnose({ info, getMe, error409: $('err409').value }, CLAIMANTS);
   lastSamples = saveSample(info);
   renderDiagnosis(d);
+  addHistory(d, raw);
+  updateShareState();
+  if (focus) $('verdictBox').focus();
+}
+
+// --- Share link (URL fragment only — never sent to any server) ---
+function updateShareState() {
+  const raw = $('jsonInput').value;
+  const tooBig = shareTooLarge(raw);
+  $('shareBtn').disabled = tooBig;
+  $('shareNote').textContent = tooBig
+    ? 'Too large to share by link — use Export report instead.'
+    : 'The link lives in the URL fragment — it is never sent to any server.';
 }
 
 $('runBtn').addEventListener('click', () => runAutopsy());
-$('demoBtn').addEventListener('click', () => { $('jsonInput').value = DEMO_JSON; fitJson(); runAutopsy(); });
-$('demoBtnTop').addEventListener('click', () => { $('jsonInput').value = DEMO_JSON; fitJson(); document.getElementById('autopsy').scrollIntoView(); runAutopsy(); });
+$('demoBtn').addEventListener('click', () => { $('jsonInput').value = DEMO_JSON; fitJson(); updateShareState(); runAutopsy(); });
+$('demoBtnTop').addEventListener('click', () => { $('jsonInput').value = DEMO_JSON; fitJson(); updateShareState(); document.getElementById('autopsy').scrollIntoView(); runAutopsy(); });
 $('clearBtn').addEventListener('click', () => {
   $('jsonInput').value = DEMO_JSON; fitJson(); $('err409').value = '';
+  clearParseError();
   $('verdictBox').className = 'verdict';
   $('verdictBox').innerHTML = '<strong>Verdict radar — waiting.</strong><br><span style="color:var(--mut)">Paste JSON and click “Autopsy my bot”, or load the demo. The demo runs automatically on first load.</span>';
   $('fingerprintBox').innerHTML = ''; $('notesBox').innerHTML = ''; $('fixBox').innerHTML = '';
@@ -113,14 +238,50 @@ $('clearBtn').addEventListener('click', () => {
   try { localStorage.removeItem(storeKey()); } catch {}
   lastDiagnosis = null; lastSamples = [];
   renderTimeline();
+  updateShareState();
+  $('jsonInput').focus();
 });
-$('sampleBtn').addEventListener('click', () => { if ($('jsonInput').value.trim()) runAutopsy(); else { $('jsonInput').value = DEMO_JSON; fitJson(); runAutopsy(); } });
+$('sampleBtn').addEventListener('click', () => { if ($('jsonInput').value.trim()) runAutopsy(); else { $('jsonInput').value = DEMO_JSON; fitJson(); updateShareState(); runAutopsy(); } });
 $('fwSelect').addEventListener('change', () => { if (lastDiagnosis) renderFix($('fwSelect').value, lastDiagnosis); });
 $('exportBtn').addEventListener('click', () => {
-  if (!lastDiagnosis) { const errEl = $('parseError'); errEl.textContent = 'Run the autopsy first — there is no diagnosis to export yet.'; errEl.hidden = false; return; }
+  if (!lastDiagnosis) { const errEl = $('parseError'); errEl.textContent = 'Run the autopsy first — there is no diagnosis to export yet.'; errEl.hidden = false; $('jumpErrBtn').hidden = true; return; }
   const md = exportReport(lastDiagnosis, loadSamples());
   const blob = new Blob([md], { type: 'text/markdown' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'webhookscope-autopsy.md'; a.click(); URL.revokeObjectURL(a.href);
+});
+$('copyJsonBtn').addEventListener('click', async (e) => {
+  let text = $('jsonInput').value;
+  try { text = JSON.stringify(JSON.parse(text), null, 2); } catch { /* copy the raw text as-is */ }
+  await copyText(text, e.currentTarget);
+});
+$('shareBtn').addEventListener('click', async (e) => {
+  const url = shareUrl(location.href, { json: $('jsonInput').value, fw: $('fwSelect').value, err409: $('err409').value });
+  await copyText(url, e.currentTarget);
+});
+document.querySelectorAll('[data-preset]').forEach((b) => b.addEventListener('click', () => {
+  const p = PRESETS[b.dataset.preset];
+  if (!p) return;
+  $('jsonInput').value = p.json;
+  $('err409').value = p.err409 || '';
+  fitJson(); updateShareState(); runAutopsy();
+}));
+$('jsonInput').addEventListener('input', () => { updateShareState(); });
+$('jsonInput').addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runAutopsy(); }
+});
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === '/') { e.preventDefault(); const d = $('shortcutsBox'); d.open = !d.open; }
+});
+$('clearDataBtn').addEventListener('click', () => {
+  const keys = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('webhookscope:')) keys.push(k);
+  }
+  keys.forEach((k) => localStorage.removeItem(k));
+  renderTimeline();
+  renderHistory();
+  $('clearDataMsg').textContent = `Cleared ${keys.length} stored item(s) from this browser.`;
 });
 $('liveBtn').addEventListener('click', async () => {
   const token = $('tokenInput').value.trim();
@@ -174,10 +335,10 @@ document.querySelectorAll('input[name="mode"]').forEach((r) => r.addEventListene
 
 // --- Failure playground ---
 const PLAY_FAULTS = [
-  { id: 'tgSlow', label: 'slow handler (timeout)', verdict: 'WEBHOOK — failing deliveries (timeout)', pending: 23 },
-  { id: 'tg500', label: 'handler 500', verdict: 'WEBHOOK — failing deliveries (500)', pending: 8 },
-  { id: 'tgWebhook', label: 'webhook stolen (n8n)', verdict: 'WEBHOOK — STOLEN (n8n)', pending: 47 },
-  { id: 'tgSecond', label: 'second poller (409)', verdict: 'SECOND POLLER suspected (409)', pending: 12 },
+  { id: 'tgSlow', label: 'slow handler (timeout)', verdict: 'WEBHOOK — failing deliveries (timeout)', pending: 23, state: 'stSlow' },
+  { id: 'tg500', label: 'handler 500', verdict: 'WEBHOOK — failing deliveries (500)', pending: 8, state: 'st500' },
+  { id: 'tgWebhook', label: 'webhook stolen (n8n)', verdict: 'WEBHOOK — STOLEN (n8n)', pending: 47, state: 'stWebhook' },
+  { id: 'tgSecond', label: 'second poller (409)', verdict: 'SECOND POLLER suspected (409)', pending: 12, state: 'stSecond' },
 ];
 function renderPlayground() {
   const active = PLAY_FAULTS.filter((f) => $(f.id).checked);
@@ -185,6 +346,12 @@ function renderPlayground() {
   $('playResult').textContent = active.length === 0
     ? 'Simulated pending_update_count: 0 · verdict: POLLING — healthy'
     : `Simulated pending_update_count: ${pending} · verdict: ${active[0].verdict} — active faults: ${active.map((f) => f.label).join(' · ')}`;
+  for (const f of PLAY_FAULTS) {
+    const el = $(f.state);
+    const on = $(f.id).checked;
+    el.textContent = on ? 'On' : 'Off';
+    el.classList.toggle('on', on);
+  }
 }
 ['tgSecond', 'tgWebhook', 'tg500', 'tgSlow'].forEach((id) => $(id).addEventListener('change', renderPlayground));
 
@@ -197,12 +364,31 @@ $('inspectBtn').addEventListener('click', () => {
   ${r.sendMessage ? `<p><b>Should produce:</b></p><pre>${esc(JSON.stringify(r.sendMessage, null, 2))}</pre>` : '<p>No chat to reply to in this Update.</p>'}
   <ul class="evidence">${r.tree.map((t) => `<li>${esc(t.key)} = ${esc(t.value)}</li>`).join('')}</ul></div>`;
 });
+$('copyInspectBtn').addEventListener('click', async (e) => {
+  const out = $('inspectOut').innerText.trim();
+  if (!out) {
+    const original = e.currentTarget.textContent;
+    e.currentTarget.textContent = 'Nothing to copy yet';
+    setTimeout(() => { e.currentTarget.textContent = original; }, 2000);
+    return;
+  }
+  await copyText(out, e.currentTarget);
+});
 
 function fitJson() { const t = $('jsonInput'); t.style.height = 'auto'; t.style.height = (t.scrollHeight + 2) + 'px'; }
 $('jsonInput').addEventListener('input', fitJson);
 
-// Init: demo pre-filled + auto-run (fixes the reference's cold-start flaw).
-$('jsonInput').value = DEMO_JSON;
+// Init: a shared #d= link wins over the demo; otherwise demo pre-filled + auto-run.
+let sharedState = null;
+if (location.hash.startsWith('#d=')) sharedState = decodeShare(location.hash.slice(3));
+if (sharedState) {
+  $('jsonInput').value = sharedState.json;
+  if (sharedState.fw) $('fwSelect').value = sharedState.fw;
+  $('err409').value = sharedState.err409 || '';
+} else {
+  $('jsonInput').value = DEMO_JSON;
+}
 fitJson();
-renderLesson(); renderPlayground(); renderTimeline();
-runAutopsy();
+updateShareState();
+renderLesson(); renderPlayground(); renderTimeline(); renderHistory();
+runAutopsy({ focus: false });

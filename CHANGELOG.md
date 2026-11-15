@@ -2,6 +2,34 @@
 
 All notable changes to WebhookScope will be documented here.
 
+## [0.1.2] — 2026-11-16
+
+Pro Polish — mobile, shareability, security headers, SEO, privacy, accessibility and repo polish. No change to the verdict engine, the demo JSON or the launch copy.
+
+### Added
+- Shareable state: "Copy share link" encodes the pasted JSON + stack + 409 line into the URL fragment (`#d=…`, base64url, Unicode-safe) — the fragment is never sent to any server; opening a share link restores the exact diagnosis. Links over ~50 KB are refused with a pointer to Export report.
+- Sample presets above the Autopsy textarea: "Healthy webhook", "409 — second poller", "Stale webhook, pending queue" — one click each, labelled SAMPLE, no real bot.
+- Privacy section (`#privacy`, linked from nav + footer): pasted JSON never leaves the browser, no analytics/trackers/cookies, localStorage only, live-token mode calls api.telegram.org directly; verifiable "DevTools → Network, zero requests fire" sentence; shared-link leak warning; "Clear my data" button wipes all `webhookscope:*` keys.
+- Recent history strip under the Autopsy (localStorage only, max 5: verdict + host + time, click restores and runs, ✕ deletes one, "Clear all" wipes). Never stores a token.
+- Copy buttons with "Copied ✓" feedback (reverts after ~2 s) on the verdict summary, the pasted JSON and the inspector output; keyboard shortcuts Ctrl/Cmd+Enter (run Autopsy) and Ctrl/Cmd+/ (toggle the shortcuts list), hinted on the run button.
+- Video captions (`assets/demo.vtt`, 6 cues) + a visible Transcript details block under the hero video.
+- SEO files: `robots.txt`, `sitemap.xml` (canonical homepage only), `<link rel="canonical">`, JSON-LD (SoftwareApplication + WebApplication, no rating anywhere).
+- Content Security Policy in `vercel.json` (script-src 'self' only, frame-ancestors 'none') + 1-day cache headers for `/assets/*`; HTML is never long-cached.
+- YAML issue forms (bug / feature / fingerprint-pattern) + `config.yml` with blank issues disabled; CI "claims" step fails on any analytics/tracking URL, any external `<script src>`, `'unsafe-eval'` or `'unsafe-inline'` in script-src.
+- Hero poster preload (`<link rel="preload" as="image" fetchpriority="high">`).
+
+### Fixed
+- iOS input zoom: all text inputs, textareas and selects are now 16px.
+- Mobile bundle: buttons/links min-height 44px, `touch-action: manipulation`, hover rules gated behind `@media (hover:hover) and (pointer:fine)`, `:active` press states (~0.97 scale), `viewport-fit=cover` + safe-area padding on the sticky header/footer, `scroll-margin-top: 72px` on sections.
+- JSON errors are now pinpointed: "Line X, column Y: …" with a "Jump to error" button that focuses the textarea and selects the offending character; valid-JSON-but-wrong-shape is distinguished ("Valid JSON — but this doesn't look like getWebhookInfo output…"); pasted JSON is never cleared; `aria-invalid` is set on error.
+- Accessibility: skip link ("Skip to main content") + `<main id="main" tabindex="-1">`, global `:focus-visible` ring (3px cyan, 2px offset), focus moves to the verdict box after an Autopsy run and back to the textarea on Clear.
+- Reduced motion: `prefers-reduced-motion` disables the radar sweep, transitions and smooth scrolling. The hero video keeps native controls and never autoplays with sound — no custom pause button added.
+- Failure-Lab switches now have `role="switch"` and a visible On/Off text state.
+- Contrast audit: all text pairs were already ≥ 4.5:1, but the `--line` border colour failed WCAG 1.4.11 (1.42:1 vs background, 1.30:1 vs panel — needs 3:1). `--line` changed `#1d2f33` → `#43707a` (3.61:1 vs background, 3.32:1 vs panel, 3.14:1 vs panel2).
+- Social preview re-exported to exactly 1200×630 (centre crop) with matching `og:image:width/height/alt`, `og:site_name`, `og:locale`.
+- Footer now shows "v0.1.2 — 16 Nov 2026 · What's new →" linking to the v0.1.2 release.
+- `<noscript>` block: honest message + links to the Flow lesson, Token safety and GitHub source.
+
 ## [0.1.1] — 2026-11-16
 
 Design & UI fix after a live visual/interaction audit of webhookscope.vercel.app (14 findings).

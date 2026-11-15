@@ -1,0 +1,34 @@
+name: Bug report
+description: Something in the Autopsy / lesson / inspector is wrong
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you see, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Paste the (redacted) getWebhookInfo JSON or Update JSON, and the verdict you got. Never paste a real bot token — use Export redacted report if you can.
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser
+      placeholder: e.g. Chrome 131 on Android
+    validations:
+      required: false
+  - type: input
+    id: url
+    attributes:
+      label: Where did you run it?
+      description: Vercel demo, local copy, or GitHub Pages?
+      placeholder: https://webhookscope.vercel.app/
+    validations:
+      required: false

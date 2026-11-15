@@ -1,0 +1,25 @@
+name: Feature request
+description: "Suggest a feature (or a v2 companion: X-Ray / Trace / Time-Travel)"
+title: "[feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What should it do?
+    validations:
+      required: true
+  - type: textarea
+    id: unique
+    attributes:
+      label: Why is it unique?
+      description: What existing tool does NOT do this?
+    validations:
+      required: true
+  - type: textarea
+    id: demand
+    attributes:
+      label: Demand evidence
+      description: Link a dated thread, issue or post if you have one.
+    validations:
+      required: false
