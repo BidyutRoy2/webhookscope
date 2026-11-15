@@ -102,10 +102,10 @@ function runAutopsy(prefillDemo = false) {
 }
 
 $('runBtn').addEventListener('click', () => runAutopsy());
-$('demoBtn').addEventListener('click', () => { $('jsonInput').value = DEMO_JSON; runAutopsy(); });
-$('demoBtnTop').addEventListener('click', () => { $('jsonInput').value = DEMO_JSON; document.getElementById('autopsy').scrollIntoView(); runAutopsy(); });
+$('demoBtn').addEventListener('click', () => { $('jsonInput').value = DEMO_JSON; fitJson(); runAutopsy(); });
+$('demoBtnTop').addEventListener('click', () => { $('jsonInput').value = DEMO_JSON; fitJson(); document.getElementById('autopsy').scrollIntoView(); runAutopsy(); });
 $('clearBtn').addEventListener('click', () => {
-  $('jsonInput').value = DEMO_JSON; $('err409').value = '';
+  $('jsonInput').value = DEMO_JSON; fitJson(); $('err409').value = '';
   $('verdictBox').className = 'verdict';
   $('verdictBox').innerHTML = '<strong>Verdict radar — waiting.</strong><br><span style="color:var(--mut)">Paste JSON and click “Autopsy my bot”, or load the demo. The demo runs automatically on first load.</span>';
   $('fingerprintBox').innerHTML = ''; $('notesBox').innerHTML = ''; $('fixBox').innerHTML = '';
@@ -114,7 +114,7 @@ $('clearBtn').addEventListener('click', () => {
   lastDiagnosis = null; lastSamples = [];
   renderTimeline();
 });
-$('sampleBtn').addEventListener('click', () => { if ($('jsonInput').value.trim()) runAutopsy(); else { $('jsonInput').value = DEMO_JSON; runAutopsy(); } });
+$('sampleBtn').addEventListener('click', () => { if ($('jsonInput').value.trim()) runAutopsy(); else { $('jsonInput').value = DEMO_JSON; fitJson(); runAutopsy(); } });
 $('fwSelect').addEventListener('change', () => { if (lastDiagnosis) renderFix($('fwSelect').value, lastDiagnosis); });
 $('exportBtn').addEventListener('click', () => {
   if (!lastDiagnosis) { const errEl = $('parseError'); errEl.textContent = 'Run the autopsy first — there is no diagnosis to export yet.'; errEl.hidden = false; return; }
@@ -135,6 +135,7 @@ $('liveBtn').addEventListener('click', async () => {
     $('tokenInput').value = '';
     if (info && info.ok === false) { msg.textContent = `Telegram said: ${info.description || 'error'}. The token may be wrong or revoked.`; return; }
     $('jsonInput').value = JSON.stringify(info, null, 2);
+    fitJson();
     const { info: parsed, getMe } = parseWebhookInfo(info, me);
     if (parsed) { const d = diagnose({ info: parsed, getMe }, CLAIMANTS); lastSamples = saveSample(parsed); renderDiagnosis(d); msg.textContent = 'Done. Token was never sent to WebhookScope and the field is now cleared. Consider revoking it in BotFather (/revoke) after this check.'; }
   } catch { msg.textContent = 'The browser could not reach api.telegram.org (network / CORS block). Use JSON-paste instead — it gives the full verdict with no token.'; $('tokenInput').value = ''; }
@@ -197,7 +198,11 @@ $('inspectBtn').addEventListener('click', () => {
   <ul class="evidence">${r.tree.map((t) => `<li>${esc(t.key)} = ${esc(t.value)}</li>`).join('')}</ul></div>`;
 });
 
+function fitJson() { const t = $('jsonInput'); t.style.height = 'auto'; t.style.height = (t.scrollHeight + 2) + 'px'; }
+$('jsonInput').addEventListener('input', fitJson);
+
 // Init: demo pre-filled + auto-run (fixes the reference's cold-start flaw).
 $('jsonInput').value = DEMO_JSON;
+fitJson();
 renderLesson(); renderPlayground(); renderTimeline();
 runAutopsy();

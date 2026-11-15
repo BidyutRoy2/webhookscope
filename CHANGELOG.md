@@ -21,6 +21,8 @@ Design & UI fix after a live visual/interaction audit of webhookscope.vercel.app
 - Playground toggles are real 46px switches instead of 20px checkboxes.
 - Mobile: flow table wrapped in a horizontal-scroll container, `pre` overflow guard, `overflow-x: clip` on the page, nav scrolls horizontally instead of wrapping to three lines.
 - JSON textarea taller (200px) so the demo JSON no longer clips a line; section spacing tightened.
+- JSON textarea now grows to fit its content, so the full demo JSON (16 lines) is visible without scrolling inside the box.
+- Video caption no longer mixes the 18 s video length with the 10 s diagnosis claim; "Coming next" version reference updated to v0.1.1.
 - Footer now links the live demo URL instead of "deploy via Vercel (see README)".
 
 ## [0.1.0] — 2026-11-16
