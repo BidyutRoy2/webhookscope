@@ -1,0 +1,16 @@
+{
+  "ok": true,
+  "result": {
+    "url": "https://n8n.example.com/webhook/3f9a1c2e-4b5d-4e6f-8a9b-0c1d2e3f4a5b/telegram",
+    "has_custom_certificate": false,
+    "pending_update_count": 47,
+    "ip_address": "203.0.113.42",
+    "last_error_date": 1762995600,
+    "last_error_message": "Wrong response from the webhook: 502 Bad Gateway",
+    "max_connections": 40,
+    "allowed_updates": [
+      "message",
+      "callback_query"
+    ]
+  }
+}

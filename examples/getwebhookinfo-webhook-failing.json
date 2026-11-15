@@ -1,0 +1,12 @@
+{
+  "ok": true,
+  "result": {
+    "url": "https://bot.example.com/webhook/telegram",
+    "has_custom_certificate": false,
+    "pending_update_count": 12,
+    "ip_address": "203.0.113.10",
+    "last_error_date": 1762995600,
+    "last_error_message": "Wrong response from the webhook: 502 Bad Gateway",
+    "max_connections": 40
+  }
+}
