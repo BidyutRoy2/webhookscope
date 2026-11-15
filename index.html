@@ -8,14 +8,20 @@
 <meta property="og:title" content="WebhookScope — Who claimed my bot token?">
 <meta property="og:description" content="Silent Bot Autopsy for Telegram bots. Paste getWebhookInfo JSON, no token needed. Verdict + fingerprint + timeline + fix.">
 <meta property="og:type" content="website">
-<meta property="og:image" content="assets/social-preview.png">
+<meta property="og:url" content="https://webhookscope.vercel.app/">
+<meta property="og:image" content="https://webhookscope.vercel.app/assets/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="WebhookScope — Who claimed my bot token?">
+<meta name="twitter:description" content="Silent Bot Autopsy for Telegram bots. Paste getWebhookInfo JSON, no token needed. Verdict + fingerprint + timeline + fix.">
+<meta name="twitter:image" content="https://webhookscope.vercel.app/assets/social-preview.png">
+<meta name="theme-color" content="#070b0d">
 <link rel="stylesheet" href="assets/css/style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='42' fill='none' stroke='%2334f5a5' stroke-width='6'/><circle cx='50' cy='50' r='10' fill='%23ff4d5e'/></svg>">
 </head>
 <body>
 <header class="top"><div class="wrap"><nav>
 <span class="brand">Webhook<b>Scope</b></span>
-<span class="badge">v0.1.0</span>
+<span class="badge">v0.1.1</span>
 <a href="#autopsy">Autopsy</a><a href="#lesson">Flow lesson</a><a href="#playground">Failure lab</a><a href="#inspector">Update inspector</a><a href="#safety">Token safety</a>
 <a href="https://github.com/BidyutRoy2/webhookscope" rel="noopener">GitHub ↗</a>
 </nav></div></header>
@@ -26,9 +32,10 @@
 <p class="pill hot">● SILENT BOT AUTOPSY</p>
 <h1>Who claimed<br>my bot <span class="stolen">token?</span></h1>
 <p class="lede">Your Telegram bot went silent. The process is running, the logs look healthy — and its updates are going somewhere else. Paste your <code>getWebhookInfo</code> JSON below. No token, no signup, no server. In seconds you get a verdict, a fingerprint of whoever claimed the token, a timeline, and the exact fix for your stack.</p>
-<p class="row"><a href="#autopsy"><button>Run the autopsy ↓</button></a> <button class="ghost" id="demoBtnTop">Try the demo bot</button></p>
-<p><img class="heroimg" src="assets/hero.png" alt="WebhookScope demo: verdict WEBHOOK — STOLEN, claimed by an n8n workflow, pending 47 updates, last error 502 Bad Gateway"></p>
-<p class="mono" style="color:var(--mut);font-size:13px">DEMO above the fold — the 3-day silent bot, diagnosed in 10 seconds. Real demo, labelled DEMO, no real token. <a href="assets/demo.mp4">Watch the 18-second demo video ↓</a></p>
+<p class="row"><a class="btn" href="#autopsy">Run the autopsy ↓</a> <button class="ghost" id="demoBtnTop">See the live verdict ↓</button></p>
+<p id="heroVerdict" class="mono" style="color:var(--mut);font-size:13px">Live demo result — running…</p>
+<p><video class="heroimg" controls preload="metadata" poster="assets/hero.png" src="assets/demo.mp4" aria-label="WebhookScope demo video: the 3-day silent bot, diagnosed in 10 seconds"></video></p>
+<p class="mono" style="color:var(--mut);font-size:13px">Demo video (18 s) — the 3-day silent bot, diagnosed in 10 seconds. Real demo, labelled DEMO, no real token.</p>
 </section>
 
 <section id="autopsy">
@@ -93,7 +100,7 @@
 <span class="node" data-node="reply">💬 sendMessage</span>
 </div>
 <p id="stepText" style="color:var(--mut)">Step 0/5 — press Play or Step.</p>
-<table aria-label="Packet flow"><thead><tr><th>#</th><th>Time</th><th>Source</th><th>Destination</th><th>Info</th></tr></thead><tbody id="flowBody"><tr><td colspan="5" style="color:var(--mut)">No updates on the wire yet.</td></tr></tbody></table>
+<div class="tablewrap"><table aria-label="Packet flow"><thead><tr><th>#</th><th>Time</th><th>Source</th><th>Destination</th><th>Info</th></tr></thead><tbody id="flowBody"><tr><td colspan="5" style="color:var(--mut)">No updates on the wire yet.</td></tr></tbody></table></div>
 </div>
 </section>
 
@@ -141,7 +148,7 @@
 </section>
 </main>
 <footer><div class="wrap">
-WebhookScope v0.1.0 · MIT · Static site — no backend, no accounts, no tracking. Source: <a href="https://github.com/BidyutRoy2/webhookscope">github.com/BidyutRoy2/webhookscope</a> · Live demo: deploy via Vercel (see README) · Inspired by the Protocol Explorer lesson grammar, with a different subject and an original dark forensic design.
+WebhookScope v0.1.1 · MIT · Static site — no backend, no accounts, no tracking. Source: <a href="https://github.com/BidyutRoy2/webhookscope">github.com/BidyutRoy2/webhookscope</a> · Live demo: <a href="https://webhookscope.vercel.app/">webhookscope.vercel.app</a> · Inspired by the Protocol Explorer lesson grammar, with a different subject and an original dark forensic design.
 </div></footer>
 <script type="module" src="assets/js/app.js"></script>
 </body>

@@ -2,6 +2,27 @@
 
 All notable changes to WebhookScope will be documented here.
 
+## [0.1.1] — 2026-11-16
+
+Design & UI fix after a live visual/interaction audit of webhookscope.vercel.app (14 findings).
+
+### Fixed
+- Link previews: `og:image` is now the absolute Vercel URL, plus `og:url`, `twitter:card` and `theme-color` meta (previews previously had no image).
+- Hero: the demo video is now an inline `<video>` player with the hero image as its poster (was a bare mp4 link that navigated away from the site); hero image is capped so the fold is cleaner.
+- Hero: "Try the demo bot" renamed to "See the live verdict" (it only scrolls to the Autopsy — there is no demo bot); the invalid `<a><button>` nesting is now a styled link.
+- New live verdict line under the hero lede, updated by every diagnosis, so the demo result is visible without scrolling; "above the fold" claim removed from the hero caption and README.
+- Verdict radar is now real: the verdict box renders an SVG radar (rings + sweep + blip, coloured by verdict) instead of text only.
+- Clear now fully resets the tool: demo JSON restored, verdict border and hero line reset, fingerprint/notes/fix cleared, and the localStorage timeline wiped (it previously kept stale samples with no way to reset them).
+- Timeline no longer adds a duplicate sample when the URL and pending count are unchanged.
+- Failure playground now lists every active fault instead of showing only the worst one.
+- Lesson Play button label no longer sticks on "Pause" after the animation finishes or after Reset.
+- Live-mode check now refreshes the fingerprint and notes cards too (they previously showed stale results from the earlier run).
+- Export now says "Run the autopsy first" instead of silently doing nothing when there is no diagnosis.
+- Playground toggles are real 46px switches instead of 20px checkboxes.
+- Mobile: flow table wrapped in a horizontal-scroll container, `pre` overflow guard, `overflow-x: clip` on the page, nav scrolls horizontally instead of wrapping to three lines.
+- JSON textarea taller (200px) so the demo JSON no longer clips a line; section spacing tightened.
+- Footer now links the live demo URL instead of "deploy via Vercel (see README)".
+
 ## [0.1.0] — 2026-11-16
 
 ### Added

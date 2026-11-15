@@ -15,7 +15,7 @@ WebhookScope is a static site at the repo root. **No build step. No environment 
 5. Environment Variables: **none**.
 6. Click **Deploy**.
 
-The live URL appears on the Vercel dashboard. Paste it into the README where it says "Live demo" (top of the file).
+The live URL is https://webhookscope.vercel.app/ — it is already pasted into the README where it says "Live demo" (top of the file).
 
 ## After deploy — verify (2 minutes)
 

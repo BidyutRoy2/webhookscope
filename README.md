@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/BidyutRoy2/webhookscope/actions/workflows/ci.yml/badge.svg)](https://github.com/BidyutRoy2/webhookscope/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-v0.1.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-v0.1.1-blue.svg)](CHANGELOG.md)
 [![Static site](https://img.shields.io/badge/site-static%20%7C%20no%20backend-brightgreen.svg)](docs/vercel-deploy.md)
 
 ![WebhookScope demo — verdict WEBHOOK STOLEN, claimed by an n8n workflow, 47 updates pending](assets/hero.png)
@@ -31,7 +31,7 @@ Paste your `getWebhookInfo` JSON (no token — that output contains no secret) a
 6. **Optional live mode (collapsed, browser-only)** — paste a token and the page calls `api.telegram.org` directly from your browser. No server, nothing stored, field cleared after the check, with a revoke reminder.
 7. **Export redacted report** — Markdown/JSON, hostnames only, no token — paste it into a GitHub issue or team chat.
 
-**Demo, pre-filled above the fold:** *"The 3-day silent bot, diagnosed in 10 seconds"* — an n8n webhook URL, `pending_update_count: 47`, last error `502 Bad Gateway` dated 3 days ago → **STOLEN by an n8n workflow, High confidence**. Labelled DEMO, no real token. (Based on the Melardenio story, 13 Oct 2026: a Telegraf poller + an n8n Telegram Trigger sharing one token; the bot was quiet for three days.)
+**Demo, pre-filled and auto-runs on load:** *"The 3-day silent bot, diagnosed in 10 seconds"* — an n8n webhook URL, `pending_update_count: 47`, last error `502 Bad Gateway` dated 3 days ago → **STOLEN by an n8n workflow, High confidence**. Labelled DEMO, no real token. (Based on the Melardenio story, 13 Oct 2026: a Telegraf poller + an n8n Telegram Trigger sharing one token; the bot was quiet for three days.)
 
 ## Also in v0.1.0
 
@@ -119,16 +119,9 @@ Dated 48-hour schedule: **Mon 16 – Tue 17 Nov 2026, 12:00–17:00 UTC** — se
 
 > **Uploading without launching leaves the repo invisible.** GitHub gives new repos essentially no organic distribution — the first stars come from outside GitHub in a compressed 24–48 h burst. Do not skip the launch plan.
 
-## Release — v0.1.0
+## Release — v0.1.1
 
-Tag instructions (owner):
-
-```bash
-git tag -a v0.1.0 -m "WebhookScope v0.1.0 — Silent Bot Autopsy"
-git push origin v0.1.0
-```
-
-Then create the GitHub Release `v0.1.0` from the tag with the notes in [CHANGELOG.md](CHANGELOG.md). No registry install line — this is not published on npm/PyPI.
+v0.1.0 is published at [releases/tag/v0.1.0](https://github.com/BidyutRoy2/webhookscope/releases/tag/v0.1.0) and v0.1.1 (design & UI fix) at [releases/tag/v0.1.1](https://github.com/BidyutRoy2/webhookscope/releases/tag/v0.1.1), both from the notes in [CHANGELOG.md](CHANGELOG.md). No registry install line — this is not published on npm/PyPI.
 
 ## Contributing
 

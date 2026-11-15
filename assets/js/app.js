@@ -32,6 +32,8 @@ function storeKey() { return 'webhookscope:autopsy:timeline'; }
 function loadSamples() { try { return JSON.parse(localStorage.getItem(storeKey()) || '[]'); } catch { return []; } }
 function saveSample(info) {
   const samples = loadSamples();
+  const last = samples[samples.length - 1];
+  if (last && last.url === (info.url || '') && last.pending_update_count === (info.pending_update_count || 0)) return samples;
   samples.push({ sampledAt: new Date().toISOString(), url: info.url || '', pending_update_count: info.pending_update_count || 0 });
   const kept = samples.slice(-50);
   try { localStorage.setItem(storeKey(), JSON.stringify(kept)); } catch {}
@@ -66,18 +68,17 @@ function renderFix(framework, diagnosis) {
   }));
 }
 
-function runAutopsy(prefillDemo = false) {
-  const raw = $('jsonInput').value.trim();
-  const errEl = $('parseError');
-  errEl.hidden = true;
-  const { info, getMe, error } = parseWebhookInfo(raw);
-  if (error || !info) { errEl.textContent = error || 'Could not parse that JSON.'; errEl.hidden = false; return; }
-  const d = diagnose({ info, getMe, error409: $('err409').value }, CLAIMANTS);
+function radarSVG(cls) {
+  const color = cls === 'stolen' ? '#ff4d5e' : cls === 'healthy' ? '#34f5a5' : cls === 'failing' ? '#ffb020' : '#9fb8ad';
+  return `<svg class="radarviz" width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="Verdict radar"><circle cx="60" cy="60" r="54" fill="none" stroke="#1d2f33"/><circle cx="60" cy="60" r="36" fill="none" stroke="#1d2f33"/><circle cx="60" cy="60" r="18" fill="none" stroke="#1d2f33"/><line x1="60" y1="60" x2="102" y2="30" stroke="${color}" stroke-width="2"/><circle cx="88" cy="42" r="6" fill="${color}"/><circle cx="60" cy="60" r="3" fill="${color}"/></svg>`;
+}
+
+function renderDiagnosis(d) {
   lastDiagnosis = d;
-  lastSamples = saveSample(info);
   const cls = d.verdict.includes('STOLEN') ? 'stolen' : d.verdict.includes('HEALTHY') ? 'healthy' : d.verdict === 'INVALID' ? '' : 'failing';
   $('verdictBox').className = `verdict ${cls}`;
-  $('verdictBox').innerHTML = `<strong>${esc(d.label)}</strong><span class="conf">${esc(d.confidence)} confidence</span><p>${esc(d.summary)}</p>`;
+  $('verdictBox').innerHTML = `${radarSVG(cls)}<strong>${esc(d.label)}</strong><span class="conf">${esc(d.confidence)} confidence</span><p>${esc(d.summary)}</p>`;
+  $('heroVerdict').textContent = `Latest result — ${d.label} · ${d.confidence} confidence${d.fingerprint ? ` · ${d.fingerprint.label}` : ''}`;
   $('fingerprintBox').innerHTML = d.fingerprint && d.url ? `<div class="card"><h3>Claimant fingerprint</h3>
     <p><b>${esc(d.fingerprint.label)}</b> <span class="pill ${d.fingerprint.confidence === 'high' ? 'hot' : ''}">${esc(d.fingerprint.confidence)} confidence</span></p>
     <p style="color:var(--mut)">${esc(d.fingerprint.pattern || d.fingerprint.evidence || '')}</p>
@@ -89,14 +90,34 @@ function runAutopsy(prefillDemo = false) {
   renderFix($('fwSelect').value, d);
 }
 
+function runAutopsy(prefillDemo = false) {
+  const raw = $('jsonInput').value.trim();
+  const errEl = $('parseError');
+  errEl.hidden = true;
+  const { info, getMe, error } = parseWebhookInfo(raw);
+  if (error || !info) { errEl.textContent = error || 'Could not parse that JSON.'; errEl.hidden = false; return; }
+  const d = diagnose({ info, getMe, error409: $('err409').value }, CLAIMANTS);
+  lastSamples = saveSample(info);
+  renderDiagnosis(d);
+}
+
 $('runBtn').addEventListener('click', () => runAutopsy());
 $('demoBtn').addEventListener('click', () => { $('jsonInput').value = DEMO_JSON; runAutopsy(); });
 $('demoBtnTop').addEventListener('click', () => { $('jsonInput').value = DEMO_JSON; document.getElementById('autopsy').scrollIntoView(); runAutopsy(); });
-$('clearBtn').addEventListener('click', () => { $('jsonInput').value = ''; $('err409').value = ''; $('verdictBox').innerHTML = '<strong>Verdict radar — waiting.</strong>'; $('fingerprintBox').innerHTML = ''; $('notesBox').innerHTML = ''; $('fixBox').innerHTML = ''; });
+$('clearBtn').addEventListener('click', () => {
+  $('jsonInput').value = DEMO_JSON; $('err409').value = '';
+  $('verdictBox').className = 'verdict';
+  $('verdictBox').innerHTML = '<strong>Verdict radar — waiting.</strong><br><span style="color:var(--mut)">Paste JSON and click “Autopsy my bot”, or load the demo. The demo runs automatically on first load.</span>';
+  $('fingerprintBox').innerHTML = ''; $('notesBox').innerHTML = ''; $('fixBox').innerHTML = '';
+  $('heroVerdict').textContent = 'Latest result — cleared. Click “Autopsy my bot” to run the demo again.';
+  try { localStorage.removeItem(storeKey()); } catch {}
+  lastDiagnosis = null; lastSamples = [];
+  renderTimeline();
+});
 $('sampleBtn').addEventListener('click', () => { if ($('jsonInput').value.trim()) runAutopsy(); else { $('jsonInput').value = DEMO_JSON; runAutopsy(); } });
 $('fwSelect').addEventListener('change', () => { if (lastDiagnosis) renderFix($('fwSelect').value, lastDiagnosis); });
 $('exportBtn').addEventListener('click', () => {
-  if (!lastDiagnosis) return;
+  if (!lastDiagnosis) { const errEl = $('parseError'); errEl.textContent = 'Run the autopsy first — there is no diagnosis to export yet.'; errEl.hidden = false; return; }
   const md = exportReport(lastDiagnosis, loadSamples());
   const blob = new Blob([md], { type: 'text/markdown' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'webhookscope-autopsy.md'; a.click(); URL.revokeObjectURL(a.href);
@@ -115,10 +136,7 @@ $('liveBtn').addEventListener('click', async () => {
     if (info && info.ok === false) { msg.textContent = `Telegram said: ${info.description || 'error'}. The token may be wrong or revoked.`; return; }
     $('jsonInput').value = JSON.stringify(info, null, 2);
     const { info: parsed, getMe } = parseWebhookInfo(info, me);
-    if (parsed) { const d = diagnose({ info: parsed, getMe }, CLAIMANTS); lastDiagnosis = d; lastSamples = saveSample(parsed); msg.textContent = 'Done. Token was never sent to WebhookScope and the field is now cleared. Consider revoking it in BotFather (/revoke) after this check.'; renderTimeline(); renderFix($('fwSelect').value, d);
-      $('verdictBox').className = `verdict ${d.verdict.includes('STOLEN') ? 'stolen' : d.verdict.includes('HEALTHY') ? 'healthy' : 'failing'}`;
-      $('verdictBox').innerHTML = `<strong>${esc(d.label)}</strong><span class="conf">${esc(d.confidence)} confidence</span><p>${esc(d.summary)}</p>`;
-    }
+    if (parsed) { const d = diagnose({ info: parsed, getMe }, CLAIMANTS); lastSamples = saveSample(parsed); renderDiagnosis(d); msg.textContent = 'Done. Token was never sent to WebhookScope and the field is now cleared. Consider revoking it in BotFather (/revoke) after this check.'; }
   } catch { msg.textContent = 'The browser could not reach api.telegram.org (network / CORS block). Use JSON-paste instead — it gives the full verdict with no token.'; $('tokenInput').value = ''; }
 });
 
@@ -147,20 +165,25 @@ function renderLesson() {
   $('stepText').textContent = `Step ${lessonIdx}/5 — ${lessonMode() === 'polling' ? 'long polling (getUpdates)' : 'webhook (POST)'}${lessonIdx === 5 ? ' — done. The update arrived and the reply went out.' : ''}`;
   document.querySelectorAll('#diagram .node').forEach((n, i) => n.classList.toggle('active', lessonIdx > 0 && i === Math.min(lessonIdx - 1, 3)));
 }
-function lessonStep() { if (lessonIdx < 5) { lessonIdx++; renderLesson(); } else { clearInterval(lessonTimer); lessonTimer = null; } }
+function lessonStep() { if (lessonIdx < 5) { lessonIdx++; renderLesson(); if (lessonIdx >= 5) { clearInterval(lessonTimer); lessonTimer = null; $('playBtn').textContent = '▶ Play'; } } else { clearInterval(lessonTimer); lessonTimer = null; $('playBtn').textContent = '▶ Play'; } }
 $('stepBtn').addEventListener('click', lessonStep);
-$('resetBtn').addEventListener('click', () => { lessonIdx = 0; clearInterval(lessonTimer); lessonTimer = null; renderLesson(); });
+$('resetBtn').addEventListener('click', () => { lessonIdx = 0; clearInterval(lessonTimer); lessonTimer = null; $('playBtn').textContent = '▶ Play'; renderLesson(); });
 $('playBtn').addEventListener('click', () => { if (lessonTimer) { clearInterval(lessonTimer); lessonTimer = null; $('playBtn').textContent = '▶ Play'; return; } if (lessonIdx >= 5) lessonIdx = 0; lessonTimer = setInterval(lessonStep, 900); $('playBtn').textContent = '⏸ Pause'; });
-document.querySelectorAll('input[name="mode"]').forEach((r) => r.addEventListener('change', () => { lessonIdx = 0; renderLesson(); }));
+document.querySelectorAll('input[name="mode"]').forEach((r) => r.addEventListener('change', () => { lessonIdx = 0; clearInterval(lessonTimer); lessonTimer = null; $('playBtn').textContent = '▶ Play'; renderLesson(); }));
 
 // --- Failure playground ---
+const PLAY_FAULTS = [
+  { id: 'tgSlow', label: 'slow handler (timeout)', verdict: 'WEBHOOK — failing deliveries (timeout)', pending: 23 },
+  { id: 'tg500', label: 'handler 500', verdict: 'WEBHOOK — failing deliveries (500)', pending: 8 },
+  { id: 'tgWebhook', label: 'webhook stolen (n8n)', verdict: 'WEBHOOK — STOLEN (n8n)', pending: 47 },
+  { id: 'tgSecond', label: 'second poller (409)', verdict: 'SECOND POLLER suspected (409)', pending: 12 },
+];
 function renderPlayground() {
-  let pending = 0; let verdict = 'POLLING — healthy';
-  if ($('tgSecond').checked) { pending += 12; verdict = 'SECOND POLLER suspected (409)'; }
-  if ($('tgWebhook').checked) { pending += 47; verdict = 'WEBHOOK — STOLEN (n8n)'; }
-  if ($('tg500').checked) { pending += 8; verdict = 'WEBHOOK — failing deliveries (500)'; }
-  if ($('tgSlow').checked) { pending += 23; verdict = 'WEBHOOK — failing deliveries (timeout)'; }
-  $('playResult').textContent = `Simulated pending_update_count: ${pending} · verdict: ${verdict}`;
+  const active = PLAY_FAULTS.filter((f) => $(f.id).checked);
+  const pending = active.reduce((n, f) => n + f.pending, 0);
+  $('playResult').textContent = active.length === 0
+    ? 'Simulated pending_update_count: 0 · verdict: POLLING — healthy'
+    : `Simulated pending_update_count: ${pending} · verdict: ${active[0].verdict} — active faults: ${active.map((f) => f.label).join(' · ')}`;
 }
 ['tgSecond', 'tgWebhook', 'tg500', 'tgSlow'].forEach((id) => $(id).addEventListener('change', renderPlayground));
 
