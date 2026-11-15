@@ -22,5 +22,7 @@ jobs:
       - name: Demo verdict smoke check
         run: |
           node -e "import('./src/autopsy.js').then(async m => { const fs = await import('node:fs'); const c = JSON.parse(fs.readFileSync('data/claimants.json','utf8')); const fx = JSON.parse(fs.readFileSync('tests/fixtures/stolen-n8n-demo.json','utf8')); const d = m.diagnose({info: fx.info}, c); if (d.verdict !== 'WEBHOOK_STOLEN' || d.confidence !== 'high') { console.error('demo verdict failed', d); process.exit(1); } console.log('demo verdict OK:', d.label); });"
+      - name: Claims guard (no tracking, CSP intact)
+        run: node scripts/claims-guard.mjs
       - name: Check static files exist
-        run: test -f index.html && test -f vercel.json && test -f data/claimants.json && test -f assets/css/style.css && test -f assets/js/app.js
+        run: test -f index.html && test -f vercel.json && test -f robots.txt && test -f sitemap.xml && test -f data/claimants.json && test -f assets/css/style.css && test -f assets/js/app.js && test -f assets/demo.vtt && test -f src/share.js && test -f src/json-error.js
