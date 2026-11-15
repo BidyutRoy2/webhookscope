@@ -1,0 +1,14 @@
+{
+  "name": "restricted-allowed-updates",
+  "info": {
+    "url": "https://bot.example.com/webhook",
+    "has_custom_certificate": false,
+    "pending_update_count": 0,
+    "max_connections": 40,
+    "allowed_updates": [
+      "message",
+      "callback_query"
+    ]
+  },
+  "expectedVerdict": "WEBHOOK_HEALTHY"
+}

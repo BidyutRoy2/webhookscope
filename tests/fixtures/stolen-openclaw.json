@@ -1,0 +1,12 @@
+{
+  "name": "stolen-openclaw",
+  "info": {
+    "url": "https://openclaw.example.com/telegram/webhook",
+    "has_custom_certificate": false,
+    "pending_update_count": 4,
+    "max_connections": 40,
+    "last_error_message": "Wrong response from the webhook: 502 Bad Gateway"
+  },
+  "expectedVerdict": "WEBHOOK_STOLEN",
+  "expectedConfidence": "high"
+}

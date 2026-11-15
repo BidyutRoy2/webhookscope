@@ -1,0 +1,11 @@
+{
+  "name": "stolen-hooklistener-relay",
+  "info": {
+    "url": "https://abc123.hook.events/telegram",
+    "has_custom_certificate": false,
+    "pending_update_count": 15,
+    "max_connections": 40,
+    "last_error_message": "Wrong response from the webhook: 502 Bad Gateway"
+  },
+  "expectedVerdict": "WEBHOOK_FAILING"
+}

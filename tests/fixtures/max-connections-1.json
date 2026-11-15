@@ -1,0 +1,10 @@
+{
+  "name": "max-connections-1",
+  "info": {
+    "url": "https://bot.example.com/webhook",
+    "has_custom_certificate": false,
+    "pending_update_count": 0,
+    "max_connections": 1
+  },
+  "expectedVerdict": "WEBHOOK_HEALTHY"
+}

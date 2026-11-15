@@ -1,0 +1,12 @@
+{
+  "name": "stolen-ngrok",
+  "info": {
+    "url": "https://abcd-1234.ngrok-free.app/webhook",
+    "has_custom_certificate": false,
+    "pending_update_count": 9,
+    "max_connections": 40,
+    "last_error_message": "Connection timed out"
+  },
+  "expectedVerdict": "WEBHOOK_STOLEN",
+  "expectedConfidence": "high"
+}

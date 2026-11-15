@@ -1,0 +1,10 @@
+{
+  "name": "webhook-failing-pending-only",
+  "info": {
+    "url": "https://bot.example.com/webhook",
+    "has_custom_certificate": false,
+    "pending_update_count": 9,
+    "max_connections": 40
+  },
+  "expectedVerdict": "WEBHOOK_FAILING"
+}

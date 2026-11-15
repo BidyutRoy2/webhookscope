@@ -1,0 +1,15 @@
+{
+  "name": "polling-privacy-mode",
+  "info": {
+    "url": "",
+    "has_custom_certificate": false,
+    "pending_update_count": 0,
+    "max_connections": 40
+  },
+  "expectedVerdict": "POLLING_HEALTHY",
+  "getMe": {
+    "id": 1,
+    "is_bot": true,
+    "can_read_all_group_messages": false
+  }
+}

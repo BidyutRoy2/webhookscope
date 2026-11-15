@@ -1,0 +1,1 @@
+{"description":"WebhookScope — Telegram Bot Update Flow Explorer. Silent Bot Autopsy: find out who claimed your bot token.","engines":{"node":">=18"},"license":"MIT","name":"webhookscope","private":true,"scripts":{"serve":"python3 -m http.server 8000","test":"node --test tests/*.test.js"},"type":"module","version":"0.1.0"}

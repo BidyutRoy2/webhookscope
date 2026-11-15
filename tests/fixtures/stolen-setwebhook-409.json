@@ -1,0 +1,11 @@
+{
+  "name": "stolen-setwebhook-409",
+  "info": {
+    "url": "https://myname.n8n.cloud/webhook/abc/telegram",
+    "has_custom_certificate": false,
+    "pending_update_count": 0,
+    "max_connections": 40
+  },
+  "expectedVerdict": "WEBHOOK_STOLEN",
+  "error409": "Conflict: terminated by setWebhook request"
+}

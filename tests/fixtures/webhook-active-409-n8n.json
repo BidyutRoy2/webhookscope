@@ -1,0 +1,11 @@
+{
+  "name": "webhook-active-409-n8n",
+  "info": {
+    "url": "https://myname.n8n.cloud/webhook/abc/telegram",
+    "has_custom_certificate": false,
+    "pending_update_count": 2,
+    "max_connections": 40
+  },
+  "expectedVerdict": "WEBHOOK_STOLEN",
+  "error409": "Conflict: can't use getUpdates method while webhook is active; use deleteWebhook to delete the webhook first"
+}

@@ -1,0 +1,11 @@
+{
+  "name": "webhook-active-409-own",
+  "info": {
+    "url": "https://bot.example.com/webhook",
+    "has_custom_certificate": false,
+    "pending_update_count": 0,
+    "max_connections": 40
+  },
+  "expectedVerdict": "WEBHOOK_HEALTHY",
+  "error409": "Conflict: can't use getUpdates method while webhook is active"
+}

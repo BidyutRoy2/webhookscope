@@ -1,0 +1,11 @@
+{
+  "name": "webhook-failing-404",
+  "info": {
+    "url": "https://bot.example.com/webhook",
+    "has_custom_certificate": false,
+    "pending_update_count": 6,
+    "max_connections": 40,
+    "last_error_message": "Wrong response from the webhook: 404 Not Found"
+  },
+  "expectedVerdict": "WEBHOOK_FAILING"
+}

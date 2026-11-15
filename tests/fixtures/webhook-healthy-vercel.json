@@ -1,0 +1,11 @@
+{
+  "name": "webhook-healthy-vercel",
+  "info": {
+    "url": "https://mybot.vercel.app/api/webhook",
+    "has_custom_certificate": false,
+    "pending_update_count": 0,
+    "max_connections": 40
+  },
+  "expectedVerdict": "WEBHOOK_HEALTHY",
+  "expectedConfidence": "high"
+}

@@ -1,0 +1,12 @@
+{
+  "name": "webhook-failing-timeout",
+  "info": {
+    "url": "https://bot.example.com/webhook",
+    "has_custom_certificate": false,
+    "pending_update_count": 20,
+    "max_connections": 40,
+    "last_error_message": "Connection timed out"
+  },
+  "expectedVerdict": "WEBHOOK_FAILING",
+  "expectedConfidence": "high"
+}

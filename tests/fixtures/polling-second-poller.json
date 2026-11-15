@@ -1,0 +1,12 @@
+{
+  "name": "polling-second-poller",
+  "info": {
+    "url": "",
+    "has_custom_certificate": false,
+    "pending_update_count": 0,
+    "max_connections": 40
+  },
+  "expectedVerdict": "SECOND_POLLER_SUSPECTED",
+  "expectedConfidence": "high",
+  "error409": "Conflict: terminated by other getUpdates request; make sure that only one bot instance is running"
+}
